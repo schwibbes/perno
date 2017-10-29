@@ -9,6 +9,18 @@ from bson.objectid import ObjectId
 from pymongo import MongoClient
  
 pattern = re.compile("^([A-Z][0-9]+)+$")
+REP_START = '[['
+REP_END = ']]'
+
+class ClearReportCommand(sublime_plugin.TextCommand):
+	def run(self,edit):
+		self.clear_views(edit)
+
+	def clear_views(self, edit):
+		regs = self.view.find_by_selector("comment.block")
+		for reg in regs:
+			self.view.erase(edit, reg)
+
 
 class SubmitCommand(sublime_plugin.TextCommand):
 
@@ -16,7 +28,7 @@ class SubmitCommand(sublime_plugin.TextCommand):
 	db = client["test"]
 
 	def run(self, edit):
-
+		self.clearViews(edit)
 		s = self.view.sel()
 		for x in s:
 			print("{:d}, {:d}".format(x.begin() , x.end()))
@@ -47,14 +59,19 @@ class SubmitCommand(sublime_plugin.TextCommand):
 		}
 		if _id is not None:
 			ticket['_id'] = ObjectId(_id[1:])
-			print("replace")
+			self.view.set_status("savestate", "updated existing note")
 			self.db.notes.replace_one({'_id': ticket['_id']}, ticket)
 		else:
 			self.db.notes.insert_one(ticket)
-			print("insert")
+			self.view.set_status("savestate", "saved new note")
 
-	def clearDb():
-		pass
+		sublime.set_timeout(
+			lambda: self.view.erase_status("savestate"), 2000)
+
+	def clearViews(self, edit):
+		regs = self.view.find_all(REP_START + '.*' + REP_END, 0)
+		for reg in regs:
+			self.view.erase(edit, reg)
 
 	def save(self, text):
 		ticket = self.text2ticket(text)
@@ -68,10 +85,10 @@ class SubmitCommand(sublime_plugin.TextCommand):
 		blob = self.view.expand_by_class(self.view.sel()[0], sublime.CLASS_EMPTY_LINE)
 		self.view.insert(edit, 
 			blob.end() , 
-			"----------->\n" 
+			REP_START + "\n" 
 			+ as_text
-			+ "<-----------"
-			+ hashlib.sha1(as_text.encode("utf-8")).hexdigest()
+			+ "sha1:" + hashlib.sha1(as_text.encode("utf-8")).hexdigest()
+			+ "\n" + REP_END
 			+ "\n")
 
 	def print_ticket(self, edit, ticket):
@@ -98,6 +115,7 @@ class SubmitCommand(sublime_plugin.TextCommand):
 			if search_res:
 				ticket = self.db.notes.find_one({'_id': ObjectId(search_res.group(1)) })
 				self.print_ticket(edit,ticket)
+			#self.view.add_phantom("test", self.view.sel()[0], "<a href='google.de'>bla</a>", sublime.LAYOUT_INLINE)
 		elif text.startswith('NOTE:'):
 			self.save(text)
 		elif text.startswith("?all"):

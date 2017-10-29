@@ -2,5 +2,9 @@
 	{ 
 		"keys": ["super+enter"],
 		"command": "submit"
+	},
+	{ 
+		"keys": ["super+backspace"],
+		"command": "clear_report"
 	}
 ]

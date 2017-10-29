@@ -1,0 +1,33 @@
+%YAML 1.2
+---
+name: notes
+file_extensions: [note]
+scope: source.notes
+
+contexts:
+  main:
+    - match: ^#.*$
+      scope: keyword.control.c
+    - match: ^\?.*$
+      scope: constant.numeric
+    - match: ~[a-f0-9]{24}
+      scope: meta.preprocessor.c++
+    - match: ^NOTE.*$
+      scope: string.regexp
+    - match: ^\*.*$
+      scope: string.regexp
+    - match: ^@.*$
+      scope: keyword.other.unit
+    - match: \[\[
+      scope: punctuation.definition.comment.bla
+      push:
+        - meta_scope: comment.block.c
+        - match: ^\*.*$
+          scope: string.regexp 
+        - match: ^#.*$
+          scope: keyword.control.c
+        - match: ^@.*$
+          scope: keyword.other.unit
+        - match: \]\]
+          scope: punctuation.definition.comment.bla
+          pop: true
