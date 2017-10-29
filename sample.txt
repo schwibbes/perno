@@ -1,0 +1,30 @@
+NOTE: new
+#topic2
+#can have more than one!
+$linked-file.gif
+@(2017-10-28T08:23:01) - (2017-10-28T08:40:01)
+text...
+more text...
+----------->
+*NOTE: new
+~59f572ad50d2f4200cd327f2
+#topic2
+#can have more than one!
+@(2017-10-28T08:23:01) - (2017-10-28T08:40:01)
+$linked-file.gif
+text...
+more text...
+sha1:395f64b1661c1555670aa07ad349b98eee1889a4
+<-----------5c7d03c4f03b933583c14e05b272d2ffe9170c7d
+
+
+NOTE: foo
+#topic3
+#can have more than two!
+~59f4e2c950d2f4200cd3279b
+$linked-file.gif
+@(2017-110-28T08:23:01) - (2017-10-28T08:40:01)
+text...
+more text...
+----------->
+<-----------da39a3ee5e6b4b0d3255bfef95601890afd80709
