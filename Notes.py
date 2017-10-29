@@ -4,8 +4,8 @@ import re
 import sys
 import hashlib
 
-from bson.objectid import ObjectId
 sys.path.append("/usr/local/lib/python2.7/site-packages")
+from bson.objectid import ObjectId
 from pymongo import MongoClient
  
 pattern = re.compile("^([A-Z][0-9]+)+$")
@@ -14,7 +14,6 @@ class SubmitCommand(sublime_plugin.TextCommand):
 
 	client = MongoClient("mongodb://192.168.99.100:27017")
 	db = client["test"]
-
 
 	def run(self, edit):
 
