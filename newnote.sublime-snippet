@@ -3,6 +3,7 @@
 NOTE: ${1:title}
 #${2:topic}
 ${3:text}
+
 ]]></content>
 	<tabTrigger>new</tabTrigger>
 	<scope>source.notes</scope>

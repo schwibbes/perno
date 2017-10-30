@@ -8,15 +8,22 @@ sys.path.append("/usr/local/lib/python2.7/site-packages")
 from bson.objectid import ObjectId
 from pymongo import MongoClient
  
-pattern = re.compile("^([A-Z][0-9]+)+$")
 REP_START = '[['
 REP_END = ']]'
 
 SCOPE_TAG = 'entity.name.tag.topic.notes'
+SCOPE_ID = 'comment.id.notes'
 SCOPE_QUERY = 'keyword.query'
 SCOPE_FULL = 'source.block.note'
 SCOPE_COMPACT = 'source.notes.compact'
 SCOPE_REPORT = 'comment.block.report.notes'
+
+SCOPES = [
+	SCOPE_TAG,
+	SCOPE_QUERY,
+	SCOPE_COMPACT,
+	SCOPE_FULL,
+	SCOPE_REPORT]
 
 settings = sublime.load_settings("Notes.sublime-settings")
 
@@ -30,50 +37,85 @@ class ClearReportCommand(sublime_plugin.TextCommand):
 		for reg in regs:
 			self.view.erase(edit, reg)
 
+class DeleteTicketCommand(sublime_plugin.TextCommand):
+	client = MongoClient(settings.get("mongo_uri", "mongodb://192.168.99.100:27017"))
+	db = client[settings.get("mongo_db", "mynotes")]
+
+	def run(self,edit):
+		self.delete(edit)
+
+	def delete(self, edit):
+		for s in self.view.sel():
+			scope_and_score = [ (scope, self.view.score_selector(s.end(), scope)) for scope in SCOPES ]
+			matched_scope = max(scope_and_score,key=lambda item:item[1])[0]
+			text = self.view.substr(self.expand_to_scope(matched_scope, s))
+			search_res = re.search('.*~([0-9a-f]{24})', text)
+			if search_res:
+				self.db.notes.delete_one({'_id': ObjectId(search_res.group(1)) })
+				self.view.erase(edit, self.expand_to_scope(matched_scope, s))
+				self.view.set_status("savestate", "deleted ticket: " + search_res.group(1))
+				sublime.set_timeout(lambda: self.view.erase_status("savestate"), 2000)
+				
+	def expand_to_scope(self, scope, initial_selection):
+		for reg_with_scope in self.view.find_by_selector(scope):
+			if reg_with_scope.contains(initial_selection):
+				return reg_with_scope
+
+
 
 class SubmitCommand(sublime_plugin.TextCommand):
 
 	client = MongoClient(settings.get("mongo_uri", "mongodb://192.168.99.100:27017"))
 	db = client[settings.get("mongo_db", "mynotes")]
 
-	scopes = [
-		SCOPE_TAG,
-		SCOPE_QUERY,
-		SCOPE_COMPACT,
-		SCOPE_FULL]
 
-	
 	def run(self, edit):
 		for s in self.view.sel():
-			res = [ (scope, self.view.score_selector(s.end(), scope)) for scope in self.scopes ]
-			print(res)
-			max(res,key=lambda item:item[1])[0]
-		
-
+			scope_and_score = [ (scope, self.view.score_selector(s.end(), scope)) for scope in SCOPES ]
+			matched_scope = max(scope_and_score,key=lambda item:item[1])
+			if matched_scope[1] == 0:
+				self.status_msg("nothing to do at point")
+			else:
+				self.run_action(edit, matched_scope[0], self.expand_to_scope(matched_scope[0], s))
+			
 	
-	def text2ticket(self,text):
-		lines = text.splitlines()
-		_id = next(iter([x for x in lines if x.startswith("~")] or []), None)
+	def expand_to_scope(self, scope, initial_selection):
+		for reg_with_scope in self.view.find_by_selector(scope):
+			if reg_with_scope.contains(initial_selection):
+				return reg_with_scope
+
+	def sub_scope(self, region, scope):
+		return [reg for reg in self.view.find_by_selector(scope) if region.contains(reg)]
+	
+	def save(self, region):
+
 		ticket = {
-			"head": lines[0],
-			"topics": [x for x in lines if x.startswith("#")],
-			"ts": [x for x in lines if x.startswith("@")],
-			"body": [x for x in lines[1:] if not x.startswith("@") and not x.startswith("#")]
+			"head": self.view.substr(region).splitlines()[0],
+			"topics": [self.view.substr(x) for x in self.sub_scope(region, SCOPE_TAG)]
 		}
-		if _id is not None:
-			ticket['_id'] = ObjectId(_id[1:])
-			self.view.set_status("savestate", "updated existing note")
+
+		id_fields = self.sub_scope(region, SCOPE_ID)
+		if len(id_fields) == 1:
+			ticket['_id'] = ObjectId(self.id_from_region(id_fields[0]))
 			self.db.notes.replace_one({'_id': ticket['_id']}, ticket)
+			self.status_msg("ticket updated")
 		else:
 			self.db.notes.insert_one(ticket)
-			self.view.set_status("savestate", "saved new note")
+			self.status_msg("ticket created")
 
-		sublime.set_timeout(
-			lambda: self.view.erase_status("savestate"), 2000)
+	def id_from_region(self, region):
+		return self.view.substr(region).replace('~', '')
 
-	def save(self, text):
-		ticket = self.text2ticket(text)
-		
+	def status_msg(self, msg):
+		self.view.set_status("savestate", str(msg))
+		sublime.set_timeout(lambda: self.view.erase_status("savestate"), 2000)
+	
+	def show_details(self,edit, region):
+		id_fields = self.sub_scope(region, SCOPE_ID)
+		if len(id_fields) == 1:
+			ticket = self.db.notes.find_one({'_id': ObjectId(self.id_from_region(id_fields[0])) })
+			self.print_ticket(edit,ticket)
+			#self.view.add_phantom("test", self.view.sel()[0], "<a href='google.de'>bla</a>", sublime.LAYOUT_INLINE)
 
 	def print_headline(self, edit, cursor):
 		as_text = ""
@@ -90,15 +132,16 @@ class SubmitCommand(sublime_plugin.TextCommand):
 			+ "\n")
 
 	def print_ticket(self, edit, ticket):
-		as_text = '\n'.join([
-			str(ticket['head']),
-			"  ~" + str(ticket['_id']),
-			'  \n  '.join(ticket['topics']),
-			'\n  '.join(ticket['ts']),
-			'\n  '.join(ticket['body'])
-		])
-		
-		as_text += "\n  " + "sha1:" + hashlib.sha1(as_text.encode("utf-8")).hexdigest()
+		as_text = (
+			str(ticket['head']) + '\n'
+			+ "  ~" + str(ticket['_id']) + '\n'
+			+ '\n'.join(["  " + t for t in ticket['topics']])
+		)
+
+		print(ticket['topics'])
+		as_text += ("\n  " 
+			+ "sha1:" + hashlib.sha1(as_text.encode("utf-8")).hexdigest()
+			+ '\n' + '-')
 		
 		current_line = self.view.line(self.view.sel()[0])
 		self.view.replace(
@@ -106,27 +149,20 @@ class SubmitCommand(sublime_plugin.TextCommand):
 			current_line,
 			as_text)
 
-	def select(self, text, edit):
-		text = text.strip()
-		if text.startswith('NOTE:'):
-			search_res = re.search('.*~([0-9a-f]{24})', text)
-			if search_res:
-				ticket = self.db.notes.find_one({'_id': ObjectId(search_res.group(1)) })
-				self.print_ticket(edit,ticket)
-			#self.view.add_phantom("test", self.view.sel()[0], "<a href='google.de'>bla</a>", sublime.LAYOUT_INLINE)
-		elif text.startswith('NOTE:'):
-			self.save(text)
-		elif text.startswith("?all"):
+	def run_action(self, edit, scope, region):
+		if scope == SCOPE_QUERY:
+			#TODO: parse query
 			cursor = self.db.notes.find()
 			self.print_headline(edit, cursor)
-		elif text.startswith("?today"):
-			cursor = self.db.notes.find()
+		elif scope == SCOPE_FULL:
+			self.save(region)
+		elif scope == SCOPE_COMPACT:
+			self.show_details(edit, region)
+		elif scope == SCOPE_TAG:
+			cursor = self.db.notes.find({'topics': self.view.substr(region) })
 			self.print_headline(edit,cursor)
-		elif text.startswith("#"):
-			cursor = self.db.notes.find({'topics': text })
-			self.print_headline(edit,cursor)
-		else:
-			return True
+		elif scope == SCOPE_REPORT:
+			print("save all")
 
 	def cleanup(self):
 		self.client.close() 

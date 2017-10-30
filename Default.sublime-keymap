@@ -6,5 +6,9 @@
 	{ 
 		"keys": ["super+backspace"],
 		"command": "clear_report"
+	},
+	{ 
+		"keys": ["super+shift+backspace"],
+		"command": "delete_ticket"
 	}
 ]
