@@ -4,30 +4,46 @@ name: notes
 file_extensions: [note]
 scope: source.notes
 
+variables:
+  hex: '[A-Fa-f0-9]'
+
 contexts:
   main:
-    - match: ^#.*$
-      scope: keyword.control.c
-    - match: ^\?.*$
-      scope: constant.numeric
-    - match: ~[a-f0-9]{24}
-      scope: meta.preprocessor.c++
-    - match: ^NOTE.*$
-      scope: string.regexp
-    - match: ^\*.*$
-      scope: string.regexp
-    - match: ^@.*$
-      scope: keyword.other.unit
+    - match: \#.*
+      scope: entity.name.tag.topic.notes
+    - match: \?.*
+      scope: keyword.query
+    - match: ~{{hex}}{24}
+      scope: comment.id.notes
+    - match: \@.*
+      scope: constant.character.ts.notes
+    - match: sha1\:{{hex}}{40}
+      scope: constant.character.hash.notes
+    - match: ^(NOTE.)(.*)(~{{hex}}{24})$
+      scope: source.notes.compact
+      captures:
+        1: entity.name.tag.type.note
+        2: string.header.notes
+        3: comment.id.notes
+    - match: ^(NOTE.)(.*)$
+      captures:
+        1: entity.name.tag.type.note
+        2: string.header.notes
+      push: note
     - match: \[\[
-      scope: punctuation.definition.comment.bla
-      push:
-        - meta_scope: comment.block.c
-        - match: ^\*.*$
-          scope: string.regexp 
-        - match: ^#.*$
-          scope: keyword.control.c
-        - match: ^@.*$
-          scope: keyword.other.unit
-        - match: \]\]
-          scope: punctuation.definition.comment.bla
-          pop: true
+      scope: comment.block.report.notes
+      push: report
+  
+  note:
+    - meta_scope: source.block.note
+    - match: ^-
+      scope: source.comment.block.report.notes.end
+      pop: true
+    - include: main
+
+  report:
+    - meta_scope: comment.block.report.notes
+    - match: \]\]
+      scope: comment.block.report.notes
+      pop: true
+    - include: main

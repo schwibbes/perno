@@ -1,0 +1,4 @@
+{
+  "mongo_uri": "mongodb://192.168.99.100:27017",
+  "mongo_db": "mynotes"
+}

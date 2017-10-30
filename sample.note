@@ -1,13 +1,19 @@
 NOTE: new
-#topic2
-#cn hae more thanone!
-$linked-file.gif
-@(2017-10-28T08:23:01) - (2017-10-28T08:40:01)
-text...
-more text...
+ #topic2
+ #cn hae more thanone!
+ $linked-file.gif
+ @(2017-10-28T08:23:01) - (2017-10-28T08:40:01)
+ text...
+ more text...
+-
 
 ?all
-
-Note: hi there
-#hot
-any text
+[[
+NOTE: new ~59f6354815614201fe8e4349
+NOTE: new2 ~59f63e7e15614201fe8e434d
+NOTE: new ~59f63ebb15614201fe8e434e
+NOTE: new3 ~59f63ec915614201fe8e434f
+NOTE: new  ~59f646f415614201fe8e4351
+NOTE: new  ~59f646f615614201fe8e4352
+sha1:8c30a62e8d44a5bfa6a0889673ef078974dd10f1
+]]

@@ -25,23 +25,53 @@ text
 more text
 ```
 
-#todo
+# Roadmap
+
+## basics
 + serialize JSON
 + deserialize JSON
 + save to db
-- actions
++ syntax highlighting v1
+++ https://gist.github.com/alehandrof/5361546
+++ https://github.com/sublimehq/Packages/blob/master/C%2B%2B/C.sublime-syntax
++ unfold headline
++ queries v1
 ++ get all ticket headlines
+++ find by topic
+
+## timelogging
+-- enter current ts
+-- log in/out
+
+## queries v2
 -- find by name
 -- find by date
-++ find by topic
-+ syntax highlighting v1
--- https://gist.github.com/alehandrof/5361546
--- https://github.com/sublimehq/Packages/blob/master/C%2B%2B/C.sublime-syntax
-- syntax highlighting v2
+
+## queries v3
+-- syntax for complex queries
+
+## gtd-cockpit
+- prio A B C
+- do-until
+- render agenda
+- improve inline syntax
+- save and edit in inline mode
+- ticket states TODO BLCK DLGT DONE
+
+# visuals
+- more colors for syntax highlighting
+
+# ticket management
+- delete tickets
 - dirty state for tickets
 - dirty state for reports
 - fold headline
-+ unfold headline
-- delete tickets
-- link files
-- link images
+
+## ideas
+- ticket links?
+- in-text dialogs [YES] [NO]
+
+## media files
+-- link files 
+-- link images
+-- show images inline
